@@ -1,1 +1,1 @@
-INSERT INTO `tienda`.`administradores` (`id`, `nombre`, `apellido`, `dni`, `direccion`, `telefono`) VALUES (1, 'ewf', 'fwef', 'fwef', 'fewfwe', 234);
+INSERT INTO `administradores` (`id`, `nombre`, `apellido`, `dni`, `direccion`, `telefono`) VALUES (1, 'ewf', 'fwef', 'fwef', 'fewfwe', 234);
