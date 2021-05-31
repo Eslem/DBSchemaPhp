@@ -125,9 +125,8 @@ class Flyway {
 
         if ($this->checkTable($connection)) {
             $files = scandir($this->folderPath);
-            //print_r($files);
-            sort($files);
-            $last = $this->last($connection);
+
+            $mapFiles = [];
             foreach ($files as $file) {
                 if ($file != "." && $file != "..") {
                     $script = $file;
@@ -138,36 +137,53 @@ class Flyway {
                     $version = substr($splited__[0], 1);
                     $intVersion = intval($version);
 
-                    if ($intVersion > $last) {
+                    $mapFiles[$intVersion] = $file;
+                }
+            }
+            // Need to sort the files with the version as a Numeric key
+            ksort($mapFiles);
+            $this->output("Files to process: ");
+            print_r($mapFiles);
 
-                        // echo " $script $type $name $version";
-                        $success = $this->executeFile($connection, $file);
+            $last = $this->last($connection);
+            foreach ($mapFiles as $intVersion => $file) {
+                $this->output("Checking verion: file --> $file");
+                $this->output("Checking verion: intVersion > last -- $intVersion > $last");
+                if ($intVersion > $last) {
+                    $script = $file;
+                    $splitedDot = explode(".", $file);
+                    $type = $splitedDot[1];
+                    $splited__ = explode("__", $splitedDot[0]);
+                    $name = $splited__[1];
+                    $version = substr($splited__[0], 1);
 
-                        $info = $connection->info;
-                        if (!$info || $info = "") {
-                            $info = "no info";
-                        }
-                        $this->output( "Inserting row schema version $intVersion output $success into flyway_schema"); 
+                    // echo " $script $type $name $version";
+                    $success = $this->executeFile($connection, $file);
 
-                        //$success = 0;
-
-                        $infoStateMent = "INSERT INTO flyway_schema VALUES(?,?,?,?,?,?,?,?)";
-
-
-                        $stmt = $connection->prepare($infoStateMent);
-
-                        if (!$stmt) {
-                            trigger_error('Wrong SQL: ' . $infoStateMent . ' Error: ' . $connection->errno . ' ' . $connection->error, E_USER_ERROR);
-                        }
-
-                        $stmt->bind_param("iisssssi", $intVersion, $intVersion, $version, $name, $type, $script, $info, $success);
-
-                        $stmt->execute() or die(' Error: ' . $connection->errno . ' ' . $connection->error);
-                        $this->output("Affected rows flyway_schema: ". $stmt->affected_rows);
-
-                        
-                        $stmt->close();
+                    $info = $connection->info;
+                    if (!$info || $info = "") {
+                        $info = "no info";
                     }
+                    $this->output( "Inserting row schema version $intVersion output $success into flyway_schema"); 
+
+                    //$success = 0;
+
+                    $infoStateMent = "INSERT INTO flyway_schema VALUES(?,?,?,?,?,?,?,?)";
+
+
+                    $stmt = $connection->prepare($infoStateMent);
+
+                    if (!$stmt) {
+                        trigger_error('Wrong SQL: ' . $infoStateMent . ' Error: ' . $connection->errno . ' ' . $connection->error, E_USER_ERROR);
+                    }
+
+                    $stmt->bind_param("iisssssi", $intVersion, $intVersion, $version, $name, $type, $script, $info, $success);
+
+                    $stmt->execute() or die(' Error: ' . $connection->errno . ' ' . $connection->error);
+                    $this->output("Affected rows flyway_schema: ". $stmt->affected_rows);
+
+                    
+                    $stmt->close();
                 }
             }
         }
